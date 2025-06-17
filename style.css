@@ -1,0 +1,42 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  background-color: black;
+  
+}
+
+canvas {
+  display: block;
+}
+
+#p5_loading {
+  display: none;
+}
+
+#fxhash-button {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  background-color: transparent;
+  border: 0.25rem solid white;
+  color: white;
+  padding: 0.1rem 1rem;
+  font-family: 'vt323', sans-serif;
+  font-size: 1.75rem;
+  transition: 200ms;
+  /* line-height: 50%; */
+}
+
+#fxhash-button:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+#fxhash-button:active {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: black;
+}
