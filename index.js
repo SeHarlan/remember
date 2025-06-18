@@ -79,8 +79,8 @@ const mapFxRand = (start, end) => {
 
 function preload() {
   try {  
-    fxShader = loadShader('vertex.glsl', 'fxFrag.glsl');
-    feedbackShader = loadShader('vertex.glsl', 'feedbackFrag.glsl');
+    fxShader = loadShader('./vertex.glsl', './fxFrag.glsl');
+    feedbackShader = loadShader('./vertex.glsl', './feedbackFrag.glsl');
 
 
     button = document.getElementById("fxhash-button");
