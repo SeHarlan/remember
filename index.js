@@ -627,6 +627,7 @@ function setRandomInterval() {
 
 
 function reset() {
+  noLoop();
   resetting = true;
 
   currentBuffer.remove()
@@ -645,6 +646,7 @@ function reset() {
   setTimeout(() => {
     setup();
     resetting = false;
+    loop();
   }, 500); // Wait for shaders to load
 }
 
