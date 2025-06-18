@@ -239,7 +239,7 @@ function initialize(keepGlitch = false) {
   minDim = min(width, height);
   canvasStrokeW = minDim * 0.03;
 
-  ranStMult = 0.01//random(5, .01);
+  ranStMult = random(5, .01);
 
   initBoxCoords = getInitBoxCoords();
 
