@@ -84,19 +84,25 @@ function preload() {
 
 
     button = document.getElementById("fxhash-button");
-    button.addEventListener("click", () => { 
-      //set new query param
+
+    const handleNewHash = () => { 
       const url = new URL(window.location.href);
       const newHash =
         Math.random().toString(36).substring(2, 15) +
         Math.random().toString(36).substring(2, 15) + 
         Math.random().toString(36).substring(2, 15);
+      
       url.searchParams.set("fxhash", newHash);
-
+  
       //reload the page with the new hash
       window.location.href = url.toString();
-
+    }
+    button.addEventListener("click", handleNewHash);
+    button.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      handleNewHash()
     });
+
   } catch (error) {
     alert(`Error: ${error.message}`)
     console.error(error)
