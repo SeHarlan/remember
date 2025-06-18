@@ -81,8 +81,7 @@ function preload() {
   try {  
     fxShader = loadShader('vertex.glsl', 'fxFrag.glsl');
     feedbackShader = loadShader('vertex.glsl', 'feedbackFrag.glsl');
-    font = loadFont('VT323-REgular.ttf');
-    // font = loadFont("MEK-Mono.otf")
+
 
     button = document.getElementById("fxhash-button");
     button.addEventListener("click", () => { 
