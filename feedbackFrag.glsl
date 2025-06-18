@@ -175,7 +175,7 @@ void main() {
   
   vec4 orgColor = vec4(0.0, 0.0, 0.0, 1.0);
 
-  float radius = 0.25; // Size of the circle radius
+  float radius = 1./6.; // Size of the circle radius
   float fadeWidth = 0.5; // Width of the fade effect at the edges
   float distNoise = noise(st * 8. + t * 0.5) * 0.1;
   float mouseDist = norm_mouse == vec2(0) ? 1. :  distance(correctedMousePos, correctedUV) + distNoise;

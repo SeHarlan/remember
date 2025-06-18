@@ -568,7 +568,7 @@ function touchEnded() {
 
 function keyPressed() {
   if (key == "p") {
-    saveCanvas(`precious-${seed}`, "png");
+    saveCanvas(`remember-${seed}`, "png");
   }
 
   if (key == "r") {
