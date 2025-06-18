@@ -645,7 +645,7 @@ function reset() {
   setTimeout(() => {
     setup();
     resetting = false;
-  }, 100); // Wait for shaders to load
+  }, 500); // Wait for shaders to load
 }
 
 
