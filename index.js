@@ -22,7 +22,7 @@ let lineWidth;
 let rMult, gMult, bMult;
 let chunk = 1;
 let useReverse = false;
-let useClear = false;
+
 let useGradientScrim = false;
 let skrimMix = 1.;
 let stMod = 1.;
@@ -45,7 +45,7 @@ let wasReverse = false;
 let resetting = false;
 let usePortrait = false;
 let useGrayScale = false;
-
+let useClear = false;
 let useFeedback = true;
 
 let canvWidth, canvHeight;
@@ -62,6 +62,9 @@ let getColorTry = 0;
 
 const initWidth = 1024;
 const initHeight = 768;
+
+
+
 
 function evenBucket(n) {
   return Math.floor(n / 2) * 2;
@@ -143,10 +146,6 @@ async function setup() {
   if (useFeedback) {
     const widthMin = usePortrait ? 0.8 : 0.66;
     const heightMin = usePortrait ? 0.66 : 0.8;
-
-    // const widthMin = usePortrait ? 0.8 : 0.7;
-    // const heightMin = usePortrait ? 0.7 : 0.8;
-
 
     widthModMult = mapFxRand(widthMin, 1.0);
     heightModMult = mapFxRand(heightMin, 1.0);
@@ -239,7 +238,13 @@ function initialize(keepGlitch = false) {
   minDim = min(width, height);
   canvasStrokeW = minDim * 0.03;
 
-  ranStMult = random(5, .01);
+  ranStMult = random([
+    random(0.01, 0.1),//very low
+    random(0.1, 0.5),//low
+    random(0.5, 1.5),//medium
+    random(1.5, 3),//high
+    random(3, 5),//very high
+  ])
 
   initBoxCoords = getInitBoxCoords();
 
@@ -253,6 +258,126 @@ function initialize(keepGlitch = false) {
     clearInterval(glitchingTimeId);
     glitchingTimeId = false;
     useClear = false;
+  }
+
+  const attributes = {
+    ...getColorAttributes(),
+    ...getPixelAttribute(),
+    ...getStaticAttribute(),
+    ...getIntensity(),
+    ...getDistortion(),
+    faded: useGrayScale,
+  };
+  console.log("🚀 ~ initialize ~ attributes:", attributes)
+
+  $fx.features(attributes);
+}
+
+function getColorAttributes() { 
+  let red = "error"
+  let green = "error"
+  let blue = "error"
+ 
+  if (rMult < 1 / 3) {
+    red = "low";
+  } else if (rMult < 2 / 3) {
+    red = "medium";
+  } else {
+    red = "high";
+  }
+
+  if (gMult < 1 / 3) {
+    green = "low";
+  } else if (gMult < 2 / 3) {
+    green = "medium";
+  } else {
+    green = "high";
+  }
+
+  if (bMult < 1 / 3) {
+    blue = "low";
+  } else if (bMult < 2 / 3) {
+    blue = "medium";
+  } else {
+    blue = "high";
+  }
+
+  return {
+    red,
+    green,
+    blue,
+  }
+}
+
+function getPixelAttribute() {
+  let pixelation = "error"
+  switch (chunk) {
+    case 1:
+      return pixelation = "none"
+    case 2:
+      return pixelation = "low"
+    case 4:
+      return pixelation = "medium"
+    case 8:
+      return pixelation = "high"
+  }
+
+  return {
+    pixelation,
+  }
+}
+
+function getStaticAttribute() { 
+  let static = "error"
+  switch (staticMod) { 
+    case 0:
+      return static = "none"
+    case 0.05:
+      return static = "low"
+    case 0.25:
+      return static = "high"
+    case 0.35:
+      return static = "max"
+    default:
+      static = "medium";
+  }
+
+  return {
+    static,
+  }
+}
+
+function getIntensity() {
+  let intensity = "error";
+  if(ranStMult < 0.1) {
+    intensity = "very-low";
+  } else if (ranStMult < 0.5) {
+    intensity = "low";
+  } else if (ranStMult < 1.5) {
+    intensity = "medium";
+  } else if (ranStMult < 3) {
+    intensity = "high";
+  } else if (ranStMult <= 5) { 
+    intensity = "very-high";
+  }
+  return {intensity};
+}
+
+function getDistortion() {
+  const totalFeedbackMod = widthModMult + heightModMult;
+  //(0.66+0.8) to (1+1) //lower is further from center
+
+  let distortion = "error";
+  if (totalFeedbackMod < 1.64) {
+    distortion = "high";
+  } else if (totalFeedbackMod < 1.82) {
+    distortion = "medium";
+  } else if (totalFeedbackMod <= 2) {
+    distortion = "low";
+  }
+
+  return {
+    distortion
   }
 }
 
@@ -327,11 +452,6 @@ function getColorMults() {
   rMult = random();
   gMult = random(0.75);
   bMult = random(0.9);
-
-  //rounds to neighboring 0.05
-  rMult = round(rMult * 20) / 20;
-  gMult = round(gMult * 20) / 20;
-  bMult = round(bMult * 20) / 20;
 
   if (getColorTry > 50) return
 
@@ -453,6 +573,10 @@ function draw() {
     image(fxBuffer, 0, 0, width, height);
   }
   timeCounter += 1 / FR;
+
+  if (timeCounter === FR * 1) { 
+    $fx.preview(); //captures image after 1 second
+  }
 }
 
 function drawFlowerStuff(mainCnv) {
