@@ -268,7 +268,7 @@ function initialize(keepGlitch = false) {
     ...getDistortion(),
     faded: useGrayScale,
   };
-  console.log("🚀 ~ initialize ~ attributes:", attributes)
+  console.log(attributes)
 
   $fx.features(attributes);
 }
@@ -303,23 +303,28 @@ function getColorAttributes() {
   }
 
   return {
-    red,
-    green,
-    blue,
+    rgb: `${red}-${green}-${blue}`,
   }
 }
 
 function getPixelAttribute() {
   let pixelation = "error"
+
   switch (chunk) {
     case 1:
-      return pixelation = "none"
+      pixelation = "none"
+      break;
     case 2:
-      return pixelation = "low"
+      pixelation = "low"
+      break;
     case 4:
-      return pixelation = "medium"
+      pixelation = "medium"
+      break;
     case 8:
-      return pixelation = "high"
+      pixelation = "high"
+      break;
+    default:
+      pixelation = "error";
   }
 
   return {
@@ -331,19 +336,23 @@ function getStaticAttribute() {
   let static = "error"
   switch (staticMod) { 
     case 0:
-      return static = "none"
+      static = "none"
+      break;
     case 0.05:
-      return static = "low"
+      static = "low"
+      break;
     case 0.25:
-      return static = "high"
+      static = "high"
+      break;
     case 0.35:
-      return static = "max"
+      static = "max"
+      break;
     default:
       static = "medium";
   }
 
   return {
-    static,
+    static
   }
 }
 
