@@ -379,6 +379,7 @@ void main() {
     color = texture2D(u_texture, blockSt);
   } else {
     float timeMult = 1. + (6.-ranStMult);
+
     if(random(ranStMult * posBlockFloor * 100. + u_time * timeMult) < 0.1 * ranStMult) {
       color = orgColor;
     }

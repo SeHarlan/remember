@@ -218,22 +218,22 @@ function initialize(keepGlitch = false) {
 
   useGradientScrim = useReverse || random([true, false]);
 
-  stMod = random(0.5, 2);
+  stMod = random(0.5, 1.8);
 
   staticMod = 0.15;
   const staticChance = random();
-  if (staticChance < 0.04) {
-    staticMod = random([0, 0.35]);
-  } else if (staticChance < 0.14) {
-    staticMod = random([0.05, 0.25]);
+  if (staticChance < 0.05) {
+    staticMod = random([0, 0.5]);
+  } else if (staticChance < 0.25) {
+    staticMod = random([0.1, 0.3]);
   } else {
-    staticMod = random([0.1, 0.15, 0.2]);
+    staticMod = 0.2;
   }
 
   pSortAlgo = random();
   useCurveVertex = random([true, false]);
 
-  useGrayScale = random() < 0.02;
+  useGrayScale = random() < 0.03;
 
   minDim = min(width, height);
   canvasStrokeW = minDim * 0.03;
@@ -267,6 +267,7 @@ function initialize(keepGlitch = false) {
     ...getIntensity(),
     ...getDistortion(),
     faded: useGrayScale,
+    reverse: useReverse,
   };
   console.log(attributes)
 
@@ -338,17 +339,18 @@ function getStaticAttribute() {
     case 0:
       static = "none"
       break;
-    case 0.05:
+    case 0.1:
       static = "low"
       break;
-    case 0.25:
+    case 0.2:
+      static = "medium"
+      break;
+    case 0.3:
       static = "high"
       break;
-    case 0.35:
+    case 0.5:
       static = "max"
       break;
-    default:
-      static = "medium";
   }
 
   return {
@@ -374,12 +376,12 @@ function getIntensity() {
 
 function getDistortion() {
   const totalFeedbackMod = widthModMult + heightModMult;
-  //(0.66+0.8) to (1+1) //lower is further from center
+  //(0.66+0.8) = 1.46 to (1+1) //lower is further from center
 
   let distortion = "error";
   if (totalFeedbackMod < 1.64) {
     distortion = "high";
-  } else if (totalFeedbackMod < 1.82) {
+  } else if (totalFeedbackMod < 1.9) {
     distortion = "medium";
   } else if (totalFeedbackMod <= 2) {
     distortion = "low";

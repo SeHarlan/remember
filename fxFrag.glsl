@@ -190,7 +190,7 @@ void main() {
   float factor = 1.0 + strength * distC * distC;
   st = cent + delta * factor;
 
-  st = stZoom(st, 1. - strength * 0.1);
+  st = stZoom(st, 1. - strength * 0.13);
 
   vec2 blockSize = vec2(chunk / u_resolution.x, chunk / u_resolution.y);
 
@@ -300,10 +300,10 @@ void main() {
     color.rgb += edgeDetection(blockSt, 2.0, u_flower).rgb * 0.15;
   }
 
-  // color.rgb = contrast(color.rgb, 1.15);
-  // color.rgb = saturation(color.rgb, 1.3);
-  color.rgb = contrast(color.rgb, 1.25);
-  color.rgb = saturation(color.rgb, 1.4);
+  // color.rgb = contrast(color.rgb, 1.25);
+  // color.rgb = saturation(color.rgb, 1.4);
+  color.rgb = saturation(color.rgb, 1.5);
+  color.rgb = contrast(color.rgb, 1.3);
 
   //grayscale
   if(useGrayScale ) {
@@ -318,10 +318,10 @@ void main() {
 
   //vignette effect
   float distFromCenter = distance(st, vec2(.5));
-  color.rgb += smoothstep(.8, -1.1, distFromCenter); //light center
-  color.rgb *= smoothstep(.725, .5, distFromCenter); //corners
+  color.rgb += smoothstep(1., -1., distFromCenter); //light center
+  color.rgb *= smoothstep(.72, .4, distFromCenter); //corners
 
-  float borderWidth = .01;
+  float borderWidth = .015;
 
   if (st.x < borderWidth) {
     color.rgb *= smoothstep(0., borderWidth, st.x);
@@ -336,7 +336,7 @@ void main() {
     color.rgb *=1.0- smoothstep(1.0 - borderWidth, 1.0, st.y);
   }
 
-  color.rgb = mix(color.rgb, preColor.rgb, 0.225);
+  color.rgb = mix(color.rgb, preColor.rgb, 0.15);
 
 
 
