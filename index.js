@@ -63,6 +63,7 @@ let getColorTry = 0;
 const initWidth = 1024;
 const initHeight = 768;
 
+let previewCaptured = false;
 
 
 
@@ -81,31 +82,31 @@ const mapFxRand = (start, end) => {
 
 
 function preload() {
-  try {  
-    fxShader = loadShader('./vertex.glsl', './fxFrag.glsl');
-    feedbackShader = loadShader('./vertex.glsl', './feedbackFrag.glsl');
+  try {
+    fxShader = loadShader("./vertex.glsl", "./fxFrag.glsl");
+    feedbackShader = loadShader("./vertex.glsl", "./feedbackFrag.glsl");
 
 
+    //TODO: delete this
+    font = loadFont("VT323-REgular.ttf");
     button = document.getElementById("fxhash-button");
-
-    const handleNewHash = () => { 
+    const handleNewHash = () => {
       const url = new URL(window.location.href);
       const newHash =
         Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15) + 
+        Math.random().toString(36).substring(2, 15) +
         Math.random().toString(36).substring(2, 15);
-      
+
       url.searchParams.set("fxhash", newHash);
-  
+
       //reload the page with the new hash
       window.location.href = url.toString();
-    }
+    };
     button.addEventListener("click", handleNewHash);
     button.addEventListener("touchstart", (e) => {
       e.preventDefault();
-      handleNewHash()
+      handleNewHash();
     });
-
   } catch (error) {
     alert(`Error: ${error.message}`)
     console.error(error)
@@ -119,6 +120,7 @@ async function setup() {
   $fx.rand.reset();
 
   const isPreview = $fx.isPreview;
+
 
   if (!isPreview) { 
     //responsive canvas
@@ -184,13 +186,8 @@ function initialize(keepGlitch = false) {
     if (!seed) {
       //init with fx hash ran number
       seed = $fx.rand() * 1000;
-      seedChannels = [
-        seed,
-        seed + 111,
-        seed + 222,
-      ]
+      seedChannels = [seed, seed + 111, seed + 222];
     } else {
- 
       // use date and random after first run
       seed = seedChannels[seedChannelIndex];
     }
@@ -222,9 +219,9 @@ function initialize(keepGlitch = false) {
 
   staticMod = 0.15;
   const staticChance = random();
-  if (staticChance < 0.05) {
+  if (staticChance < 0.08) {
     staticMod = random([0, 0.5]);
-  } else if (staticChance < 0.25) {
+  } else if (staticChance < 0.28) {
     staticMod = random([0.1, 0.3]);
   } else {
     staticMod = 0.2;
@@ -233,18 +230,18 @@ function initialize(keepGlitch = false) {
   pSortAlgo = random();
   useCurveVertex = random([true, false]);
 
-  useGrayScale = random() < 0.03;
+  useGrayScale = random() < 0.04;
 
   minDim = min(width, height);
   canvasStrokeW = minDim * 0.03;
 
   ranStMult = random([
-    random(0.01, 0.1),//very low
-    random(0.1, 0.5),//low
-    random(0.5, 1.5),//medium
-    random(1.5, 3),//high
-    random(3, 5),//very high
-  ])
+    random(0.01, 0.1), //very low
+    random(0.1, 0.5), //low
+    random(0.5, 1.5), //medium
+    random(1.5, 3), //high
+    random(3, 5), //very high
+  ]);
 
   initBoxCoords = getInitBoxCoords();
 
@@ -269,9 +266,66 @@ function initialize(keepGlitch = false) {
     faded: useGrayScale,
     reverse: useReverse,
   };
-  console.log(attributes)
+  console.log(attributes);
 
   $fx.features(attributes);
+
+  //TODO: delete this
+  textBuffer = createGraphics(width, height);
+  textBuffer.textFont("monospace");
+  textBuffer.textFont(font);
+
+  textBuffer.noStroke();
+
+  textBuffer.drawingContext.shadowOffsetX = 0;
+  textBuffer.drawingContext.shadowOffsetY = 0;
+  textBuffer.drawingContext.shadowBlur = 40;
+  textBuffer.drawingContext.shadowColor = "black";
+}
+
+
+//TODO: delete this
+function drawText() {
+  textBuffer.clear();
+  textBuffer.push();
+  const xScaleT = useFlipH ? -1 : 1;
+  const yScaleT = useFlipV ? -1 : 1;
+  const xPosT = useFlipH ? width : 0;
+  const yPosT = useFlipV ? height : 0;
+  textBuffer.translate(xPosT, yPosT); // Center the canvas
+  textBuffer.scale(xScaleT, yScaleT); // Flip
+  textBuffer.translate(width / 2, height / 2);
+
+  const textBase = canvasStrokeW * 1.5;
+
+  const mainT = () => {
+    textBuffer.textAlign(CENTER, CENTER);
+    textBuffer.textSize(textBase * 4);
+    textBuffer.text("remember.exe", 0, -canvasStrokeW * 4);
+  };
+
+  const loadingT = () => {
+    textBuffer.textAlign(LEFT, CENTER);
+    textBuffer.textSize(textBase * 1.5);
+    const dots = Array.from(
+      { length: floor(timeCounter * FR * 0.1) % 4 },
+      (_, i) => "."
+    ).join("");
+    textBuffer.text("loading" + dots, -canvasStrokeW * 4, canvasStrokeW);
+  };
+
+  const minT = () => {
+    textBuffer.textAlign(CENTER, CENTER);
+    textBuffer.textSize(textBase * 1.5);
+    textBuffer.text("est. time - 5 days", 0, canvasStrokeW * 4);
+  };
+
+  textBuffer.fill(255);
+  mainT();
+  loadingT();
+  minT();
+
+  textBuffer.pop();
 }
 
 function getColorAttributes() { 
@@ -461,15 +515,14 @@ function getColorMults() {
   getColorTry++;
 
   rMult = random();
-  gMult = random(0.75);
+  gMult = random(0.85);
   bMult = random(0.9);
 
   if (getColorTry > 50) return
 
-  const thresh = .75;
+  const thresh = 2./3.;
   const noHighlight = rMult < thresh && gMult < thresh && bMult < thresh;
-  const tooDark = false//rMult + gMult + bMult < 1;
-  if (noHighlight || tooDark) {
+  if (noHighlight) {
     getColorMults();
   }
 }
@@ -520,6 +573,9 @@ function draw() {
 
   drawFlowerStuff(petalBuffer);
 
+  // TODO: delete this
+  // drawText();
+
 
   ;[fxShader, feedbackShader].forEach((shdr, i) => {
     if (i === 0) {
@@ -531,6 +587,8 @@ function draw() {
       shdr.setUniform("staticMod", staticMod);
       shdr.setUniform("useGrayScale", useGrayScale);
 
+      //TODO: delete this
+      shdr.setUniform("text", textBuffer);
     } else {
       shdr.setUniform("rMult", rMult);
       shdr.setUniform("gMult", gMult);
@@ -585,10 +643,12 @@ function draw() {
   }
   timeCounter += 1 / FR;
 
-  if (timeCounter === FR * 1) { 
+  if (!previewCaptured && timeCounter > 1) { 
     $fx.preview(); //captures image after 1 second
+    previewCaptured = true;
   }
 }
+
 
 function drawFlowerStuff(mainCnv) {
   //CANVAS

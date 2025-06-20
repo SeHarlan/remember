@@ -25,6 +25,9 @@ uniform float stMod;
 uniform float staticMod;
 uniform bool useGrayScale;
 
+//TODO: delete this
+uniform sampler2D text;
+
 varying vec2 vTexCoord;
 
 //UTIL
@@ -300,15 +303,38 @@ void main() {
     color.rgb += edgeDetection(blockSt, 2.0, u_flower).rgb * 0.15;
   }
 
-  // color.rgb = contrast(color.rgb, 1.25);
   // color.rgb = saturation(color.rgb, 1.4);
+  // color.rgb = contrast(color.rgb, 1.25);
   color.rgb = saturation(color.rgb, 1.5);
   color.rgb = contrast(color.rgb, 1.3);
 
   //grayscale
-  if(useGrayScale ) {
+  if(useGrayScale) {
     color.rgb = vec3(dot(color.rgb, vec3(0.299, 0.587, 0.114))); //retro
   }
+
+
+  //TODO: delete this
+  vec2 textStMod = vec2(color.r + color.g, color.b + color.g) * 0.003 
+    + random2(floor(st * 66.0) * stMod + floor(u_time * 3.) + 100.) * 0.0015;
+  vec4 textColor = texture2D(text, st + textStMod);
+
+  if(textColor.a > 0.01) {
+    if(textColor.r < 0.5) {
+      float t = clamp(textColor.a * 4., 0., 1.0);
+      //lighten for shadows
+      color.rgb = mix(color.rgb, vec3(.9), t * .7);
+
+      color.rgb = mix(color.rgb, saturation(color.rgb, 3.), t * 2.);
+
+    } else {
+      
+ 
+      color.rgb = 1.0 - color.rgb; //invert for text
+      color.rgb += .8;
+    }
+
+  } 
 
   //static
   vec4 preColor = color;
@@ -337,12 +363,7 @@ void main() {
   }
 
   color.rgb = mix(color.rgb, preColor.rgb, 0.15);
-
-
-
-
-
-
+  
 
   gl_FragColor = color;
 }
