@@ -270,7 +270,7 @@ function initialize(keepGlitch = false) {
     faded: useGrayScale,
     reverse: useReverse,
   };
-  console.log(attributes);
+  !resetting && console.log(attributes);
 
   $fx.features(attributes);
 
@@ -665,6 +665,7 @@ function draw() {
   }
 }
 
+console.log("01000101 01010110 00110011");
 
 function drawFlowerStuff(mainCnv) {
   //CANVAS
