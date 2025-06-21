@@ -81,13 +81,9 @@ const mapFxRand = (start, end) => {
 };
 
 
+//TODO: delete this
 function preload() {
   try {
-    fxShader = loadShader("./vertex.glsl", "./fxFrag.glsl");
-    feedbackShader = loadShader("./vertex.glsl", "./feedbackFrag.glsl");
-
-
-    //TODO: delete this
     // font = loadFont("VT323-REgular.ttf");
     button = document.getElementById("fxhash-button");
     const handleNewHash = () => {
@@ -170,6 +166,14 @@ async function setup() {
   petalBuffer = createGraphics(canvWidth, canvHeight);
   currentBuffer = createGraphics(canvWidth, canvHeight, WEBGL);
   previousBuffer = createGraphics(canvWidth, canvHeight, WEBGL);
+
+  fxShader = fxBuffer.createShader(vertex, fxFrag);
+  feedbackShader = previousBuffer.createShader(vertex, feedbackFrag);
+
+  fxBuffer.shader(fxShader);
+  previousBuffer.shader(feedbackShader);
+
+
 
 
   currentBuffer.noStroke();
@@ -285,48 +289,48 @@ function initialize(keepGlitch = false) {
 
 
 //TODO: delete this
-function drawText() {
-  textBuffer.clear();
-  textBuffer.push();
-  const xScaleT = useFlipH ? -1 : 1;
-  const yScaleT = useFlipV ? -1 : 1;
-  const xPosT = useFlipH ? width : 0;
-  const yPosT = useFlipV ? height : 0;
-  textBuffer.translate(xPosT, yPosT); // Center the canvas
-  textBuffer.scale(xScaleT, yScaleT); // Flip
-  textBuffer.translate(width / 2, height / 2);
+// function drawText() {
+//   textBuffer.clear();
+//   textBuffer.push();
+//   const xScaleT = useFlipH ? -1 : 1;
+//   const yScaleT = useFlipV ? -1 : 1;
+//   const xPosT = useFlipH ? width : 0;
+//   const yPosT = useFlipV ? height : 0;
+//   textBuffer.translate(xPosT, yPosT); // Center the canvas
+//   textBuffer.scale(xScaleT, yScaleT); // Flip
+//   textBuffer.translate(width / 2, height / 2);
 
-  const textBase = canvasStrokeW * 1.5;
+//   const textBase = canvasStrokeW * 1.5;
 
-  const mainT = () => {
-    textBuffer.textAlign(CENTER, CENTER);
-    textBuffer.textSize(textBase * 4);
-    textBuffer.text("remember.exe", 0, -canvasStrokeW * 4);
-  };
+//   const mainT = () => {
+//     textBuffer.textAlign(CENTER, CENTER);
+//     textBuffer.textSize(textBase * 4);
+//     textBuffer.text("remember.exe", 0, -canvasStrokeW * 4);
+//   };
 
-  const loadingT = () => {
-    textBuffer.textAlign(LEFT, CENTER);
-    textBuffer.textSize(textBase * 1.5);
-    const dots = Array.from(
-      { length: floor(timeCounter * FR * 0.1) % 4 },
-      (_, i) => "."
-    ).join("");
-    textBuffer.text("loading" + dots, -canvasStrokeW * 4, canvasStrokeW);
-  };
+//   const loadingT = () => {
+//     textBuffer.textAlign(LEFT, CENTER);
+//     textBuffer.textSize(textBase * 1.5);
+//     const dots = Array.from(
+//       { length: floor(timeCounter * FR * 0.1) % 4 },
+//       (_, i) => "."
+//     ).join("");
+//     textBuffer.text("loading" + dots, -canvasStrokeW * 4, canvasStrokeW);
+//   };
 
-  const minT = () => {
-    textBuffer.textAlign(CENTER, CENTER);
-    textBuffer.textSize(textBase * 1.5);
-    textBuffer.text("est. time - 5 days", 0, canvasStrokeW * 4);
-  };
+//   const minT = () => {
+//     textBuffer.textAlign(CENTER, CENTER);
+//     textBuffer.textSize(textBase * 1.5);
+//     textBuffer.text("est. time - 5 days", 0, canvasStrokeW * 4);
+//   };
 
-  textBuffer.fill(255);
-  mainT();
-  loadingT();
-  minT();
+//   textBuffer.fill(255);
+//   mainT();
+//   loadingT();
+//   minT();
 
-  textBuffer.pop();
-}
+//   textBuffer.pop();
+// }
 
 function getColorAttributes() { 
   let red = "error"
@@ -490,20 +494,25 @@ function getInitBoxCoords() {
 
 function randomize() {
   const rand = $fx.rand();
-  if (rand < 0.025) {
+  if (rand < 0.005) {
     useFeedback = !useFeedback;
     seedChannelIndex = floor(random(seedChannels.length));
-    reset()
+    reset();
   } else if (rand < 0.25) {
     seedChannelIndex = floor(random(seedChannels.length));
-    initialize(true)
+    initialize(true);
   } else {
-    chunk = random([1, 2, 2, 2, 4, 4, 4, 8]);
-    useReverse = random() < 0.2;
+    inputInt = floor(random(0, 6));
+    activator = random();
+
+    chunk = random([1, 2, 2, 2, 4, 4, 4, 8, 16]);
+    useReverse = random() < 0.1;
     skrimMix = random([0, 0.25, 0.5, 0.5, 0.5, 0.75]);
-    useGrayScale = random() < 0.03;
-  
-    useGradientScrim = skrimMix === 1 || useReverse || random([true, false]);
+
+    useGradientScrim = useReverse || random([true, false]);
+
+    stMod = random(0.5, 1.8);
+
     pSortAlgo = random();
     useClear = random([true, false, false]);
 
@@ -511,20 +520,27 @@ function randomize() {
   }
 }
 
+
 function getColorMults() {
-  getColorTry++;
+  const maxTries = 50;
+  const thresh = 2 / 3;
 
-  rMult = random();
-  gMult = random(0.85);
-  bMult = random(0.9);
+  for (let i = 0; i < maxTries; i++) {
+    rMult = random();
+    gMult = random(0.85);
+    bMult = random(0.9);
 
-  if (getColorTry > 50) return
+    // Check if at least one channel is above threshold (has a highlight)
+    const hasHighlight = rMult >= thresh || gMult >= thresh || bMult >= thresh;
 
-  const thresh = 2./3.;
-  const noHighlight = rMult < thresh && gMult < thresh && bMult < thresh;
-  if (noHighlight) {
-    getColorMults();
+    if (hasHighlight) {
+      // We found valid values that have at least one highlight
+      return;
+    }
   }
+
+  // If we reach here after maxTries, just use the last generated values
+  console.log("Max attempts reached in getColorMults");
 }
 
 function setUpFlower({ index, tl, tr, br, bl, focal }) {
@@ -588,7 +604,7 @@ function draw() {
       shdr.setUniform("useGrayScale", useGrayScale);
 
       //TODO: delete this
-      shdr.setUniform("text", textBuffer);
+      // shdr.setUniform("text", textBuffer);
     } else {
       shdr.setUniform("rMult", rMult);
       shdr.setUniform("gMult", gMult);
@@ -819,19 +835,18 @@ function keyPressed() {
 }
 
 function setRandomInterval() {
-  const t = 200 + Math.random(2000)
+  const t = 250 + Math.random(1500)
   glitchingTimeId = setTimeout(() => {
     randomize();
     setRandomInterval();
   }, t);
 }
 
-
 function reset() {
   noLoop();
   resetting = true;
 
-  currentBuffer.remove()
+  currentBuffer.remove();
   previousBuffer.remove();
   fxBuffer.remove();
   petalBuffer.remove();
@@ -842,15 +857,14 @@ function reset() {
 
   p5canvas.remove();
   p5canvas = undefined;
- 
-  preload();
-  setTimeout(() => {
-    setup();
-    resetting = false;
-    loop();
-  }, 500); // Wait for shaders to load
-}
 
+  fxShader = undefined;
+  feedbackShader = undefined;
+
+  setup();
+  resetting = false;
+  loop();
+}
 
 //debounce resize
 let resizeTimeout;
@@ -861,3 +875,766 @@ function windowResized() {
     reset();
   }, 100); //debounce time
 }
+
+const vertex = `
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+attribute vec3 aPosition;
+attribute vec2 aTexCoord;
+
+varying vec2 vTexCoord;
+
+void main() {
+  vTexCoord = aTexCoord;
+  vTexCoord.y = 1.0 - vTexCoord.y;
+
+  vec4 positionVec4 = vec4(aPosition, 1.0);
+  positionVec4.xy = positionVec4.xy * 2.0 - 1.0;
+  
+  gl_Position = positionVec4;
+}
+`;
+
+const feedbackFrag = `
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+#define PI 3.14159265359
+#define TWO_PI 6.28318530718
+#define EPSILON 0.00001
+#define min_param_a 0.0 + EPSILON
+#define max_param_a 1.0 - EPSILON
+
+uniform sampler2D u_texture;
+uniform sampler2D u_flower;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_seed;
+uniform vec2 u_mouse;
+uniform vec2 u_aspectRatio;
+uniform int u_stage;
+uniform float rMult;
+uniform float gMult;
+uniform float bMult;
+uniform float chunk;
+uniform bool useReverse;
+uniform bool useClear;
+uniform float skrimMix;
+uniform float pSortAlgo;
+uniform bool useGradientScrim;
+uniform int inputInt;
+uniform float activator;
+uniform float ranStMult;
+
+varying vec2 vTexCoord;
+
+// 01000101 01010110 00110011
+
+
+//UTIL
+float map(float value, float inputMin, float inputMax, float outputMin, float outputMax) {
+    return outputMin + ((value - inputMin) / (inputMax - inputMin) * (outputMax - outputMin));
+}
+
+float random(in vec2 _st) {
+  vec2 st = _st + u_seed;
+  
+  return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+float random(in float _x){
+    float x = _x + u_seed;
+
+    return fract(sin(x)*1e4);
+}
+
+vec2 random2(vec2 _st){
+    vec2 st = _st + u_seed;
+
+    st = vec2( dot(st,vec2(127.1,311.7)),
+              dot(st,vec2(269.5,183.3)) );
+    return -1.0 + 2.0*fract(sin(st)*43758.5453123);
+}
+
+float noise(vec2 _st) {
+  vec2 st = _st + u_seed;
+
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+
+    // vec2 u = f*f*(3.0-2.0*f);
+    vec2 u = f*f*f*(f*(f*6.-15.)+10.); //improved smoothstep
+
+    float n = mix( mix( dot( random2(i + vec2(0.0,0.0) ), f - vec2(0.0,0.0) ),
+                     dot( random2(i + vec2(1.0,0.0) ), f - vec2(1.0,0.0) ), u.x),
+                mix( dot( random2(i + vec2(0.0,1.0) ), f - vec2(0.0,1.0) ),
+                     dot( random2(i + vec2(1.0,1.0) ), f - vec2(1.0,1.0) ), u.x), u.y);
+
+    return 0.5 + 0.5 * n;
+}
+
+float noiseNegNeutralPos(vec2 st) {
+  float r = noise(st);
+  if (r < 0.45) {
+    return -1.0;
+  } else if (r < 0.55) {
+    return 0.0;
+  } else {
+    return 1.0;
+  }
+}
+
+float randomNegNeutralPos(vec2 st) {
+  float r = random(st);
+  if (r < 0.33) {
+    return -1.0;
+  } else if (r < 0.66) {
+    return .0;
+  } else {
+    return 1.0;
+  }
+}
+
+float noiseOnOff(vec2 st) {
+  return floor(noise(st) + 0.5);
+}
+float randomOnOff(vec2 st) {
+  return floor(random(st) + .5);
+}
+
+float whirls(vec2 st) {
+  st.x *= u_resolution.x/u_resolution.y;
+
+  float noiseMod = 2. + (sin(u_time*.2)*.5);
+
+  float moveMult = u_time * .25 + sin(u_time * .25) * .1;
+
+  st.x -= sin(moveMult * 2.) * 0.05;
+  st.y -= cos(moveMult) * 0.05;
+  st += vec2(0, moveMult * .05);
+
+  st += noise(st*3.) * noiseMod;
+  st.x -= u_time * 0.02;
+
+  float splat = noise(st * 4. + 50.); 
+
+
+  return splat;
+}
+
+
+float spiral(vec2 st) {
+  vec2 uv = st * 2.0 - 1.0;
+  uv *= u_aspectRatio;
+  float t = u_time * 0.25;
+
+  float modi = map(sin(t), -1., 1., 0.33, PI);
+  // Convert to polar coordinates
+  float r = length(uv) * modi ;
+  float theta = atan(uv.y, uv.x);
+
+  // Create the spiral pattern
+  float thresh = PI / 3.;
+
+
+  return mod(r - (theta + t * 2.) * .5, thresh);
+}
+
+float drip(vec2 st) {
+  vec2 center = vec2(0.5) * u_aspectRatio;
+  float dist = distance(st * u_aspectRatio, center);
+
+  return 1.0-fract(dist - u_time * 0.033 + (sin(u_time * .75)) * 0.1);
+}
+
+//MAIN =========================================================
+void main() {
+  vec2 st = vTexCoord;
+  vec2 orgSt = st;
+
+
+  vec2 norm_mouse = u_mouse / u_resolution;
+  float screenAspectRatio = u_resolution.x / u_resolution.y;
+
+
+
+  vec2 blockSize = vec2(chunk / u_resolution.x, chunk / u_resolution.y);
+
+  vec2 posBlockFloor = floor(st / blockSize) ;
+  vec2 posBlockOffset = fract(st / blockSize) ;
+
+  vec2 blockSt = posBlockFloor * blockSize;
+
+  vec2 correctedMousePos = vec2(norm_mouse.x * screenAspectRatio, norm_mouse.y );
+  vec2 correctedUV = vec2(blockSt.x * screenAspectRatio, blockSt.y );
+
+  float t = u_time * ranStMult;
+
+  float squares = floor(10. + random(u_seed + 100.) * 200.);
+  float waves = floor(10. + random(u_seed + 200.) * 200.);
+  
+  vec4 orgColor = vec4(0.0, 0.0, 0.0, 1.0);
+
+  float radius = 1./6.; // Size of the circle radius
+  float fadeWidth = 0.5; // Width of the fade effect at the edges
+  float distNoise = noise(st * 8. + t * 0.5) * 0.1;
+  float mouseDist = norm_mouse == vec2(0) ? 1. :  distance(correctedMousePos, correctedUV) + distNoise;
+  float displaceIntensity = smoothstep(radius + fadeWidth, radius - fadeWidth, mouseDist);
+  bool mouseInView = u_mouse.x > u_resolution.x * 0.01 && u_mouse.y > u_resolution.y * 0.01 && u_mouse.x < u_resolution.x*0.99 && u_mouse.y < u_resolution.y*0.99;
+  
+  if(!mouseInView) {
+    displaceIntensity = 0.0;
+  }
+
+  bool useMag = displaceIntensity > 0.5;//  && random(blockSt) < map(displaceIntensity, 0.5, .575, 0.0, 1.0);
+
+  if(useMag) {
+    float magDiv = 2.;
+    squares = ceil(squares / magDiv);
+    waves = ceil(waves / magDiv);
+  }
+
+
+  vec4 petalColor = texture2D(u_flower, blockSt);
+
+  float div = 1.0;
+  float borderDiv = 128.;//64
+  if(useReverse) {
+    div = 100000.;//big enough so squares and waves are 1
+    if(petalColor.a > 0.1) {
+      if( petalColor.r < 0.33) {
+        div = borderDiv;
+      } else if( petalColor.r < 0.66) {
+        div = 1.;
+      } else {
+        // div = 4.;
+      }
+    }
+  } else {
+    
+    if(petalColor.a > 0.1) {
+      if( petalColor.r < 0.33) {
+        div = borderDiv;
+      } else if( petalColor.r < 0.66) {
+        div = 100000.;
+      } else {
+        div = 1.;
+      }
+    }
+  }
+
+
+  squares = ceil(squares / div);
+  waves = ceil(waves / div);
+
+  float rInput, gInput, bInput;
+
+  if(inputInt == 0) {
+    rInput = st.y;
+    gInput = st.x - st.y;
+    bInput = st.y + st.x;
+  } else if (inputInt == 1) {
+    rInput = st.x;
+    gInput = st.y + st.x;
+    bInput = st.y - st.x;
+  } else if (inputInt == 2) {
+    rInput = st.x + st.y;
+    gInput = st.y;
+    bInput = st.x - st.y;
+  } else if (inputInt == 3) {
+    rInput = st.y - st.x;
+    gInput = st.x ;
+    bInput = st.y + st.y;
+  } else if (inputInt == 4) {
+    rInput = st.x + st.y;
+    gInput = st.x - st.y;
+    bInput = st.y;
+  } else {
+    rInput = st.y - st.x;
+    gInput = st.y + st.x;
+    bInput = st.x;
+  }
+
+
+
+  float rParam = sin(0.031 + rInput * TWO_PI * waves) * .5 + .5;
+  float gParam = sin(0.032 + gInput * TWO_PI * waves ) * .5 + .5;
+  float bParam = sin(0.033 + bInput * TWO_PI * waves ) * .5 + .5;
+
+  orgColor.r = fract(rParam * squares) * rMult;
+  orgColor.g = fract(gParam * squares) * gMult;
+  orgColor.b = fract(bParam * squares) * bMult;
+
+
+  float timeOffset = fract(t * 0.0001);
+
+  if (random(ranStMult * 100. * blockSt + timeOffset) < 0.25) {
+    float rangeMult = 0.3;
+    if(petalColor.a > 0.1 && petalColor.r < 0.66) {
+      rangeMult = 0.1;
+    }
+
+    float range = 0.1 + random(u_seed + 1000.) * rangeMult;
+    orgColor.r += map(random(blockSt * 10. + timeOffset + 100.), 0.,1., -range, range);
+    orgColor.g += map(random(blockSt * 10. + timeOffset + 200.), 0.,1., -range, range);
+    orgColor.b += map(random(blockSt * 10. + timeOffset + 300.), 0.,1., -range, range);
+  }
+
+  if(petalColor.a < 0.1 && !useMag && !useClear) {
+    vec4 baseColor = vec4(vec3(rMult, gMult, bMult) * .5, 1.0);
+
+    if (useGradientScrim) {
+      vec4 baseGrad = vec4(0.0, 0.0, 0.0, 1.0);
+
+      float rParam = sin(1.0 - rInput * TWO_PI) * .5 + .5;
+      float gParam = sin(1.0 - gInput * TWO_PI ) * .5 + .5;
+      float bParam = sin(1.0 - bInput * TWO_PI ) * .5 + .5;
+
+      baseGrad.r = fract(rParam) * rMult;
+      baseGrad.g = fract(gParam) * gMult;
+      baseGrad.b = fract(bParam) * bMult;
+      baseGrad = mix(baseGrad, baseColor, 0.5);
+
+      orgColor = mix(orgColor, baseGrad, skrimMix);
+
+    } else {
+     
+      orgColor = mix(orgColor, baseColor, skrimMix);
+    }
+  }
+
+  bool noSort;
+  if(useReverse) {
+    noSort = petalColor.a < 0.1 || petalColor.r < 0.33 || petalColor.r > 0.66;;
+  } else {
+    noSort = petalColor.a > 0.1 && petalColor.r < 0.66;
+  }
+
+  if (u_time < .05 || useMag || noSort) {
+    gl_FragColor = orgColor;
+    return;
+  }
+ 
+
+  vec4 color = texture2D(u_texture, st);
+
+  float sortThresh = 0.5 + sin(PI * u_seed + t * .25) * 0.05;
+
+
+  float activatorDiv  = 1./4.;
+  float sValue;
+  float speedThreshMult;
+
+  if(activator < activatorDiv) {
+    sValue = whirls(blockSt * .75);
+    speedThreshMult = 0.75;
+  } else if(activator < activatorDiv*2.) {
+    sValue = spiral(blockSt);
+    speedThreshMult = 0.5;
+  } else if (activator < activatorDiv*3.) {
+    sValue = noise(blockSt * 2. + t * 0.1);
+    speedThreshMult = 0.75;
+  } else {
+    sValue = drip(blockSt);
+    speedThreshMult = 0.5;
+  }
+
+  bool isFlower = petalColor.a > 0.1 && petalColor.r > 0.75; 
+
+  bool useSort = sValue + random(blockSt) * 0.05 < sortThresh;
+ 
+  if(useSort) {
+    color = vec4(0.0, 0.0, 0.0, 1.0);
+    vec2 noiseMult = vec2(.01);
+
+    vec2 belowBlock = posBlockFloor + vec2(-1.0, -1.0);
+    vec4 belowCheck = texture2D(u_texture, belowBlock * blockSize);
+    float belowBrightness = (belowCheck.r + belowCheck.g + belowCheck.b) / 3.0;
+
+    float speed = sValue < sortThresh * speedThreshMult ? -1.0 : 1.0;
+
+    if(pSortAlgo < 0.5) {
+      if(belowBrightness < 0.25) {
+        posBlockFloor.x -= speed;
+      } else if(belowBrightness < 0.5) {
+        posBlockFloor.y += speed;
+      } else if(belowBrightness < 0.75) {
+        posBlockFloor.x += speed;
+      } else {
+        posBlockFloor.y -= speed;
+      }
+    } else {
+      if(belowBrightness < 0.25) {
+        posBlockFloor.y -= speed;
+      } else if(belowBrightness < 0.5) {
+        posBlockFloor.x -= speed;
+      } else if(belowBrightness < 0.75) {
+        posBlockFloor.x += speed;
+      } else {
+        posBlockFloor.y += speed;
+      }
+    }
+
+    vec2 blockSt = (posBlockFloor + posBlockOffset) * blockSize;
+    color = texture2D(u_texture, blockSt);
+  } else {
+    float timeMult = 1. + (6.-ranStMult);
+
+    if(random(ranStMult * posBlockFloor * 100. + u_time * timeMult) < 0.1 * ranStMult) {
+      color = orgColor;
+    }
+  }
+
+  gl_FragColor = color;
+}
+`;
+
+const fxFrag = `
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+#define PI 3.14159265359
+#define TWO_PI 6.28318530718
+#define EPSILON 0.00001
+#define min_param_a 0.0 + EPSILON
+#define max_param_a 1.0 - EPSILON
+
+uniform sampler2D u_texture;
+uniform sampler2D u_flower;
+uniform vec2 u_resolution;
+uniform float u_time;
+uniform float u_seed;
+uniform vec2 u_mouse;
+uniform vec2 u_aspectRatio;
+uniform vec2 tl;
+uniform vec2 br;
+uniform vec2 tr;
+uniform vec2 bl;
+uniform float chunk;
+uniform bool useClear;
+uniform float stMod;
+uniform float staticMod;
+uniform bool useGrayScale;
+
+varying vec2 vTexCoord;
+
+// 01000101 01010110 00110011
+
+//UTIL
+float map(float value, float inputMin, float inputMax, float outputMin, float outputMax) {
+    return outputMin + ((value - inputMin) / (inputMax - inputMin) * (outputMax - outputMin));
+}
+
+float random(in vec2 _st) {
+  vec2 st = _st; + fract(u_seed);
+  
+  return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453);
+}
+float random(in float _x){
+    float x = _x + fract(u_seed);
+
+    return fract(sin(x)*1e4);
+}
+
+vec2 random2(vec2 _st){
+    vec2 st = _st + fract(u_seed);
+
+    st = vec2( dot(st,vec2(127.1,311.7)),
+              dot(st,vec2(269.5,183.3)) );
+    return -1.0 + 2.0*fract(sin(st)*43758.5453123);
+}
+
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+
+float noise(vec2 _st) {
+  vec2 st = _st + fract(u_seed);
+
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+
+    // vec2 u = f*f*(3.0-2.0*f);
+    vec2 u = f*f*f*(f*(f*6.-15.)+10.); //improved smoothstep
+
+    float n = mix( mix( dot( random2(i + vec2(0.0,0.0) ), f - vec2(0.0,0.0) ),
+                     dot( random2(i + vec2(1.0,0.0) ), f - vec2(1.0,0.0) ), u.x),
+                mix( dot( random2(i + vec2(0.0,1.0) ), f - vec2(0.0,1.0) ),
+                     dot( random2(i + vec2(1.0,1.0) ), f - vec2(1.0,1.0) ), u.x), u.y);
+
+    // return n;
+    return 0.5 + 0.5 * n;
+}
+
+float noiseNegNeutralPos(vec2 st) {
+  float r = noise(st);
+  if (r < 0.4) {
+    return -1.0;
+  } else if (r < 0.6) {
+    return 0.0;
+  } else {
+    return 1.0;
+  }
+}
+
+float randomNegNeutralPos(vec2 st) {
+  float r = random(st);
+  if (r < 0.33) {
+    return -1.0;
+  } else if (r < 0.66) {
+    return .0;
+  } else {
+    return 1.0;
+  }
+}
+
+float noiseNegPos(vec2 st) {
+  return noise(st) < 0.5 ? -1.0 : 1.0;
+}
+
+float randomNegPos(vec2 st) {
+  return floor(random(st) * 3.0) - 1.0;
+}
+
+float noiseOnOff(vec2 st) {
+  return floor(noise(st) + 0.5);
+}
+float randomOnOff(vec2 st) {
+  return floor(random(st) + 0.5);
+}
+
+mat2 rotate2d(float angle){
+    return mat2(cos(angle),-sin(angle),
+                sin(angle),cos(angle));
+}
+
+float tri(float x) {
+  return abs(fract(x) - 0.5) * 4.0 - 1.0;
+}
+
+vec3 compress(vec3 col) {
+  return 0.5 * (1.0 - cos(col * PI)); // Sine wave to bias toward 0 or 1
+}
+
+vec4 edgeDetection(vec2 _st, float intensity, sampler2D tex) {
+  vec2 onePixel = vec2(1.0) / u_resolution * intensity; //intensity is just to scale the line width down
+
+  float kernel[9];
+  vec3 sampleTex[9];
+
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      sampleTex[i * 3 + j] = texture2D(tex, _st + onePixel * vec2(i-1, j-1)).rgb;
+    }
+  }
+
+  // Sobel filter kernels for horizontal and vertical edge detection
+  float Gx[9];
+  Gx[0] = -1.0; Gx[1] = 0.0; Gx[2] = 1.0;
+  Gx[3] = -2.0; Gx[4] = 0.0; Gx[5] = 2.0;
+  Gx[6] = -1.0; Gx[7] = 0.0; Gx[8] = 1.0;
+
+  float Gy[9];
+  Gy[0] = -1.0; Gy[1] = -2.0; Gy[2] = -1.0;
+  Gy[3] = 0.0; Gy[4] = 0.0; Gy[5] = 0.0;
+  Gy[6] = 1.0; Gy[7] = 2.0; Gy[8] = 1.0;
+
+
+  vec3 edge = vec3(0.0);
+  for (int k = 0; k < 9; k++) {
+    edge.x += dot(sampleTex[k], vec3(0.299, 0.587, 0.114)) * Gx[k];
+    edge.y += dot(sampleTex[k], vec3(0.299, 0.587, 0.114)) * Gy[k];
+  }
+
+  float edgeStrength = length(edge);
+
+  vec4 edgeColor = vec4(vec3(edgeStrength), 1.0);
+
+  return edgeColor;
+}
+
+vec3 contrast(vec3 color, float contrastFactor) {
+  // Adjust contrast using a simple formula
+  return mix(vec3(0.5), color, contrastFactor);
+}
+
+vec3 saturation(vec3 color, float saturationFactor) {
+  // Convert RGB to grayscale
+  float gray = dot(color, vec3(0.299, 0.587, 0.114));
+  // Mix the original color with the grayscale value
+  return mix(vec3(gray), color, saturationFactor);
+}
+
+vec2 stZoom(vec2 st, float zoomFactor) {
+  // Zoom in on the center of the texture
+  vec2 center = vec2(0.5);
+  return (st - center) * zoomFactor + center;
+}
+//MAIN =========================================================
+void main() {
+  vec2 st = vTexCoord;  
+  vec2 orgSt = st;
+
+    // // Apply a radial distortion
+  float strength = .15;
+  vec2 cent = vec2(0.5);
+  vec2 delta = st - cent;
+  float distC = length(delta);
+  float factor = 1.0 + strength * distC * distC;
+  st = cent + delta * factor;
+
+  st = stZoom(st, 1. - strength * 0.13);
+
+  vec2 blockSize = vec2(chunk / u_resolution.x, chunk / u_resolution.y);
+
+  vec2 posBlockFloor = floor(st / blockSize) ;
+  vec2 posBlockOffset = fract(st / blockSize) ;
+
+  vec2 blockSt = posBlockFloor * blockSize;
+
+  vec2 norm_mouse = u_mouse / u_resolution;
+  vec2 correctedMousePos = vec2(norm_mouse.x, norm_mouse.y ) * u_aspectRatio;
+  vec2 correctedUV = vec2(st.x, st.y ) * u_aspectRatio;
+
+
+  
+  vec4 color = texture2D(u_texture, st);
+  vec4 petalColor = texture2D(u_flower, blockSt);
+
+
+  float altMult = 1.;
+
+  if(petalColor.a > .1) {
+    if(petalColor.r < 0.33) {
+      color.rgb -= 0.2 * altMult;
+    } else if( petalColor.r < 0.66) {
+      color.rgb -= 0.1 * altMult;
+    } else {
+      color.rgb += 0.05 * altMult;
+    } 
+  } 
+
+
+  //border effects
+  bool inBox = st.x > tl.x  && st.x < br.x + blockSize.x && st.y > tl.y && st.y < br.y + blockSize.y;
+  bool boxBg = petalColor.a > 0.1 && petalColor.r < 0.66 && petalColor.r > 0.33;
+
+  if(!useClear) {
+    if(inBox && boxBg) {
+      vec2 innerBorderWidth = vec2(0.015) * vec2(u_aspectRatio.y, u_aspectRatio.x);
+
+      vec3 border = color.rgb;
+      if(blockSt.x < tl.x + innerBorderWidth.x) {
+        border /= smoothstep(0.0, innerBorderWidth.x, blockSt.x - tl.x);
+      }
+      if(blockSt.x > br.x - innerBorderWidth.x) {
+        border /= 1.0 - smoothstep(br.x - innerBorderWidth.x, br.x, blockSt.x);
+      }
+      if(blockSt.y < tl.y + innerBorderWidth.y) {
+        border /= smoothstep(0.0, innerBorderWidth.y, blockSt.y - tl.y);
+      }
+      if(blockSt.y > br.y - innerBorderWidth.y) {
+        border /= 1.0 - smoothstep(br.y - innerBorderWidth.y, br.y, blockSt.y);
+      }
+
+      border = clamp(border, 0.0, 2.);
+
+      //inner light
+      color.rgb = mix(color.rgb, border, .8);
+    }      
+    // } else if(petalColor.a < 0.1) {
+    //   vec2 outerBorderWidth = vec2(0.05) * vec2(u_aspectRatio.y, u_aspectRatio.x);
+    //   vec3 border = color.rgb;
+
+    //   // Smoothstep functions for the four sides
+    //   float horizontalLeft = smoothstep(0.0, outerBorderWidth.x, tl.x - st.x);
+    //   float horizontalRight = smoothstep(0.0, outerBorderWidth.x, st.x - br.x);
+    //   float verticalTop = smoothstep(0.0, outerBorderWidth.y, tl.y - st.y);
+    //   float verticalBottom = smoothstep(0.0, outerBorderWidth.y, st.y - br.y);
+
+    //   // Horizontal and vertical
+    //   if(st.x > tl.x - outerBorderWidth.x && st.x < tl.x) {
+    //       border *= horizontalLeft;
+    //   }
+    //   if(st.x < br.x + outerBorderWidth.x && st.x > br.x) {
+    //       border *= horizontalRight;
+    //   }
+    //   if(st.y > tl.y - outerBorderWidth.y && st.y < tl.y) {
+    //       border *= verticalTop;
+    //   }
+    //   if(st.y < br.y + outerBorderWidth.y && st.y > br.y) {
+    //       border *= verticalBottom;
+    //   }
+
+
+    //   // Corners 
+    //   if(st.x < tl.x && st.y < tl.y) {
+    //       border = color.rgb * max(horizontalLeft, verticalTop);
+    //   }
+    //   if(st.x > br.x && st.y < tl.y) {
+    //       border = color.rgb * max(horizontalRight, verticalTop);
+    //   }
+    //   if(st.x < tl.x && st.y > br.y) {
+    //       border = color.rgb * max(horizontalLeft, verticalBottom);
+    //   }
+    //   if(st.x > br.x && st.y > br.y) {
+    //       border = color.rgb * max(horizontalRight, verticalBottom);
+    //   }
+      
+    //   border = clamp(border, 0.0, 1.0);
+
+    //   //outer shadow
+    //   color.rgb = mix(color.rgb, border, .1);
+
+    // }
+  }
+
+  if(petalColor.a > 0.1 && petalColor.r < 0.33) {
+    color.rgb += edgeDetection(blockSt, 2.0, u_flower).rgb * 0.15;
+  }
+
+  // color.rgb = saturation(color.rgb, 1.4);
+  // color.rgb = contrast(color.rgb, 1.25);
+  color.rgb = saturation(color.rgb, 1.5);
+  color.rgb = contrast(color.rgb, 1.3);
+
+  //grayscale
+  if(useGrayScale) {
+    color.rgb = vec3(dot(color.rgb, vec3(0.299, 0.587, 0.114))); //retro
+  }
+
+  //static
+  vec4 preColor = color;
+
+  float staticDirection = randomNegPos(st * stMod + fract(u_time * 0.001) + 100.);
+  color.rgb += random(st * stMod + fract(u_time * 0.001)) * staticMod * staticDirection;
+
+  //vignette effect
+  float distFromCenter = distance(st, vec2(.5));
+  color.rgb += smoothstep(1., -1., distFromCenter); //light center
+  color.rgb *= smoothstep(.72, .4, distFromCenter); //corners
+
+  float borderWidth = .015;
+
+  if (st.x < borderWidth) {
+    color.rgb *= smoothstep(0., borderWidth, st.x);
+  }
+  if (st.x > 1.0 - borderWidth) {
+    color.rgb *=1.0- smoothstep(1.0 - borderWidth, 1.0, st.x);
+  }
+  if (st.y < borderWidth) {
+    color.rgb *= smoothstep(0., borderWidth, st.y);
+  }
+  if (st.y > 1.0 - borderWidth) {
+    color.rgb *=1.0- smoothstep(1.0 - borderWidth, 1.0, st.y);
+  }
+
+  color.rgb = mix(color.rgb, preColor.rgb, 0.15);
+  
+
+  gl_FragColor = color;
+}
+`;
