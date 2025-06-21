@@ -88,7 +88,7 @@ function preload() {
 
 
     //TODO: delete this
-    font = loadFont("VT323-REgular.ttf");
+    // font = loadFont("VT323-REgular.ttf");
     button = document.getElementById("fxhash-button");
     const handleNewHash = () => {
       const url = new URL(window.location.href);
@@ -271,16 +271,16 @@ function initialize(keepGlitch = false) {
   $fx.features(attributes);
 
   //TODO: delete this
-  textBuffer = createGraphics(width, height);
-  textBuffer.textFont("monospace");
-  textBuffer.textFont(font);
+  // textBuffer = createGraphics(width, height);
+  // textBuffer.textFont("monospace");
+  // textBuffer.textFont(font);
 
-  textBuffer.noStroke();
+  // textBuffer.noStroke();
 
-  textBuffer.drawingContext.shadowOffsetX = 0;
-  textBuffer.drawingContext.shadowOffsetY = 0;
-  textBuffer.drawingContext.shadowBlur = 40;
-  textBuffer.drawingContext.shadowColor = "black";
+  // textBuffer.drawingContext.shadowOffsetX = 0;
+  // textBuffer.drawingContext.shadowOffsetY = 0;
+  // textBuffer.drawingContext.shadowBlur = 40;
+  // textBuffer.drawingContext.shadowColor = "black";
 }
 
 
