@@ -84,7 +84,7 @@ const mapFxRand = (start, end) => {
 //TODO: delete this
 function preload() {
   try {
-    // font = loadFont("VT323-REgular.ttf");
+    font = loadFont("VT323-REgular.ttf");
     button = document.getElementById("fxhash-button");
     const handleNewHash = () => {
       const url = new URL(window.location.href);
@@ -275,62 +275,58 @@ function initialize(keepGlitch = false) {
   $fx.features(attributes);
 
   //TODO: delete this
-  // textBuffer = createGraphics(width, height);
-  // textBuffer.textFont("monospace");
-  // textBuffer.textFont(font);
+  textBuffer = createGraphics(width, height);
+  textBuffer.textFont("monospace");
+  textBuffer.textFont(font);
 
-  // textBuffer.noStroke();
+  textBuffer.noStroke();
 
-  // textBuffer.drawingContext.shadowOffsetX = 0;
-  // textBuffer.drawingContext.shadowOffsetY = 0;
-  // textBuffer.drawingContext.shadowBlur = 40;
-  // textBuffer.drawingContext.shadowColor = "black";
+  textBuffer.drawingContext.shadowOffsetX = 0;
+  textBuffer.drawingContext.shadowOffsetY = 0;
+  textBuffer.drawingContext.shadowBlur = 40;
+  textBuffer.drawingContext.shadowColor = "black";
 }
 
 
 //TODO: delete this
-// function drawText() {
-//   textBuffer.clear();
-//   textBuffer.push();
-//   const xScaleT = useFlipH ? -1 : 1;
-//   const yScaleT = useFlipV ? -1 : 1;
-//   const xPosT = useFlipH ? width : 0;
-//   const yPosT = useFlipV ? height : 0;
-//   textBuffer.translate(xPosT, yPosT); // Center the canvas
-//   textBuffer.scale(xScaleT, yScaleT); // Flip
-//   textBuffer.translate(width / 2, height / 2);
+function drawText() {
+  textBuffer.clear();
+  textBuffer.push();
+  const xScaleT = useFlipH ? -1 : 1;
+  const yScaleT = useFlipV ? -1 : 1;
+  const xPosT = useFlipH ? width : 0;
+  const yPosT = useFlipV ? height : 0;
+  textBuffer.translate(xPosT, yPosT); // Center the canvas
+  textBuffer.scale(xScaleT, yScaleT); // Flip
+  textBuffer.translate(width / 2, height / 2);
 
-//   const textBase = canvasStrokeW * 1.5;
+  const textBase = canvasStrokeW * 1.5;
 
-//   const mainT = () => {
-//     textBuffer.textAlign(CENTER, CENTER);
-//     textBuffer.textSize(textBase * 4);
-//     textBuffer.text("remember.exe", 0, -canvasStrokeW * 4);
-//   };
+  const mainT = () => {
+    // textBuffer.translate(0, height * 0.5);
+    textBuffer.textAlign(CENTER, CENTER);
+    textBuffer.textSize(textBase * 3);
+    textBuffer.text("remember.exe", 0, -canvasStrokeW * 3);
+  };
 
-//   const loadingT = () => {
-//     textBuffer.textAlign(LEFT, CENTER);
-//     textBuffer.textSize(textBase * 1.5);
-//     const dots = Array.from(
-//       { length: floor(timeCounter * FR * 0.1) % 4 },
-//       (_, i) => "."
-//     ).join("");
-//     textBuffer.text("loading" + dots, -canvasStrokeW * 4, canvasStrokeW);
-//   };
+  const loadingT = () => {
+    textBuffer.textAlign(LEFT, CENTER);
+    textBuffer.textSize(textBase * 1.5);
+    const dots = Array.from(
+      { length: floor(timeCounter * FR * 0.1) % 4 },
+      (_, i) => "."
+    ).join("");
+    textBuffer.text("loading" + dots, -canvasStrokeW * 4, canvasStrokeW);
+  };
 
-//   const minT = () => {
-//     textBuffer.textAlign(CENTER, CENTER);
-//     textBuffer.textSize(textBase * 1.5);
-//     textBuffer.text("est. time - 5 days", 0, canvasStrokeW * 4);
-//   };
 
-//   textBuffer.fill(255);
-//   mainT();
-//   loadingT();
-//   minT();
+  textBuffer.fill(255);
+  mainT();
+  loadingT();
 
-//   textBuffer.pop();
-// }
+
+  textBuffer.pop();
+}
 
 function getColorAttributes() { 
   let red = "error"
@@ -590,7 +586,7 @@ function draw() {
   drawFlowerStuff(petalBuffer);
 
   // TODO: delete this
-  // drawText();
+  drawText();
 
 
   ;[fxShader, feedbackShader].forEach((shdr, i) => {
@@ -604,7 +600,7 @@ function draw() {
       shdr.setUniform("useGrayScale", useGrayScale);
 
       //TODO: delete this
-      // shdr.setUniform("text", textBuffer);
+      shdr.setUniform("text", textBuffer);
     } else {
       shdr.setUniform("rMult", rMult);
       shdr.setUniform("gMult", gMult);
@@ -1320,6 +1316,9 @@ uniform float stMod;
 uniform float staticMod;
 uniform bool useGrayScale;
 
+//TODO: delete this
+uniform sampler2D text;
+
 varying vec2 vTexCoord;
 
 // 01000101 01010110 00110011
@@ -1606,6 +1605,28 @@ void main() {
   if(useGrayScale) {
     color.rgb = vec3(dot(color.rgb, vec3(0.299, 0.587, 0.114))); //retro
   }
+
+   //TODO: delete thisAdd commentMore actions
+  vec2 textStMod = vec2(color.r + color.g, color.b + color.g) * 0.003 
+    + random2(floor(st * 66.0) * stMod + floor(u_time * 3.) + 100.) * 0.0015;
+  vec4 textColor = texture2D(text, st + textStMod);
+
+  if(textColor.a > 0.01) {
+    if(textColor.r < 0.5) {
+      float t = clamp(textColor.a * 4., 0., 1.0);
+      //lighten for shadows
+      color.rgb = mix(color.rgb, vec3(.9), t * .7);
+
+      color.rgb = mix(color.rgb, saturation(color.rgb, 3.), t * 2.);
+
+    } else {
+      
+ 
+      color.rgb = 1.0 - color.rgb; //invert for text
+      color.rgb += .8;
+    }
+
+  } 
 
   //static
   vec4 preColor = color;
